@@ -34,7 +34,9 @@ struct DustScreen
   h::Real
   τ::Real
   Rᵥ::Real
-
+  Rᵤ::Real
+  Rᵢ::Real
+  DustScreen(h, τ; Rᵥ = 3.1, Rᵤ = 4.1, Rᵢ = 3.2) = new(h, τ, 3.1, 4.1, 3.2)
 end
 
 function screenτ(screen::DustScreen, Δh::Real)
@@ -62,10 +64,11 @@ function spotorstar(star::AATauStar, i::Real,  x::Real, y::Real)
   end
 end
 
-function BV(star::AATauStar, i::Real, screen::DustScreen, yₛ::Real; h = 0.02, scatter = 1, sym = true)
+function UBVI(star::AATauStar, i::Real, screen::DustScreen, yₛ::Real; h = 0.02, scatter = 0.8, sym = true)
   coords = [-1:h:1;]
   EV = 0
   EB = 0
+  EU = 0; EI = 0
   for x in coords, y in coords
     # print(x, " ", y, " ", (y < yₛ) & !sym, "\n")
     r² = x^2+y^2
@@ -83,18 +86,29 @@ function BV(star::AATauStar, i::Real, screen::DustScreen, yₛ::Real; h = 0.02, 
     cont = spotorstar(star, i, x, y)
     ΔV = τ/log(2.512)
     ΔB = ΔV/screen.Rᵥ + ΔV
-    EV += cont(551e-7)*90e-7*(exp(-τ) + 0.125*scatter)
-    EB += cont(445e-7)*94e-7*(2.512^(-ΔB) + 0.175*scatter)
+    ΔU = ΔV/screen.Rᵤ + ΔB
+    ΔI = ΔV/screen.Rᵢ + ΔV
+    EV += cont(551e-7)*90e-7*(exp(-τ) + 0.121*scatter)
+    EB += cont(445e-7)*94e-7*(2.512^(-ΔB) + 0.167*scatter)
+    EU += cont(365e-7)*66e-7*(2.512^(-ΔU) + 0.222*scatter)
+    EI += cont(806e-7)*149e-7*(2.512^(-ΔI) + 0.065*scatter)
   end
   EV *= h^2*star.R^2
   EB *= h^2*star.R^2
-  return -2.5*log10(EB), -2.5*log10(EV)
+  EU *= h^2*star.R^2
+  EI *= h^2*star.R^2
+  return -2.5*log10(EU), -2.5*log10(EB), -2.5*log10(EV), -2.5*log10(EI)
 end
 
-function BV(star::AATauStar, i::Real, screen::DustScreen, yₛ::Array{T, 1}; h = 0.02, scatter = 1, sym = true) where {T<:Real}
-  BVss(i::Real, y::Real) = BV(star, i, screen, y, h = h, scatter = scatter, sym = sym)
-  B0, V0 = BVss(i, -1e99)
-  return first.(BVss.(i, yₛ)) .- B0, last.(BVss.(i, yₛ)) .- V0
+function UBVI(star::AATauStar, i::Real, screen::DustScreen, yₛ::Array{T, 1}; h = 0.02, scatter = 1, sym = true) where {T<:Real}
+  UBVIss(i::Real, y::Real) = UBVI(star, i, screen, y, h = h, scatter = scatter, sym = sym)
+  U0, B0, V0, I0 = UBVIss(i, -1e99)
+  UBVIt = UBVIss.(i, yₛ)
+  U = [UBVIp[1] for UBVIp in UBVIt]
+  B = [UBVIp[2] for UBVIp in UBVIt]
+  V = [UBVIp[3] for UBVIp in UBVIt]
+  I = [UBVIp[4] for UBVIp in UBVIt]
+  return U .- U0, B .- B0, V .- V0, I .- I0 
 end
 
 end
