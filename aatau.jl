@@ -1,5 +1,7 @@
 module AATau
 
+using Printf
+
 const R☉ = 6.955e10
 const M☉ = 1.989e33
 const year_seconds = 3.155e7
@@ -81,7 +83,7 @@ function UBVI(star::AATauStar, i::Real, screen::DustScreen, yₛ::Real; h = 0.02
       # print("low\n")
       τ = screen.τ
     end
-
+    
     # print(τ, " ", y - yₛ, "\n")
     cont = spotorstar(star, i, x, y)
     ΔV = τ/log(2.512)
@@ -109,6 +111,30 @@ function UBVI(star::AATauStar, i::Real, screen::DustScreen, yₛ::Array{T, 1}; h
   V = [UBVIp[3] for UBVIp in UBVIt]
   I = [UBVIp[4] for UBVIp in UBVIt]
   return U .- U0, B .- B0, V .- V0, I .- I0 
+end
+
+function saveviscontinuummap(star::AATauStar, i::Real, screen::DustScreen, yₛ; h = 0.02, sym = true)
+  coords = [-1:h:1;]
+  open("vis_continuum_map.out", "w") do io
+    for x in coords
+      for y in coords
+        r² = x^2 + y^2
+        if r² > 0.999999
+          @printf(io, "%8.f %8.f %13.e\n", x, y, 0.0)
+          continue
+        end
+    
+        τ = screenτ(screen, y - yₛ)
+        if ((y < yₛ) && !sym)
+          # print("low\n")
+          τ = screen.τ
+        end
+        cont = spotorstar(star, i, x, y)
+        @printf(io, "%8.f %8.f %13.e\n", x, y, cont(551e-7)*90e-7*exp(-τ))
+      end
+      print(io, "\n")
+    end
+  end
 end
 
 end
