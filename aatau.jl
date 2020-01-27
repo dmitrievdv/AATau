@@ -1,12 +1,15 @@
 module AATau
 
 using Printf
+using Plots
+# using PyPlot
 
 const R☉ = 6.955e10
 const M☉ = 1.989e33
 const year_seconds = 3.155e7
 const G = 6.67259e-8
 const σ = 5.67e-5
+
 
 struct AATauStar
   R::Float64
@@ -110,7 +113,7 @@ function UBVI(star::AATauStar, i::Real, screen::DustScreen, yₛ::Array{T, 1}; h
   B = [UBVIp[2] for UBVIp in UBVIt]
   V = [UBVIp[3] for UBVIp in UBVIt]
   I = [UBVIp[4] for UBVIp in UBVIt]
-  return U .- U0, B .- B0, V .- V0, I .- I0 
+  return Dict("U" => U .- U0, "B" => B .- B0, "V" => V .- V0, "I" => I .- I0)
 end
 
 function saveviscontinuummap(star::AATauStar, i::Real, screen::DustScreen, yₛ; h = 0.02, sym = true)
@@ -137,4 +140,13 @@ function saveviscontinuummap(star::AATauStar, i::Real, screen::DustScreen, yₛ;
   end
 end
 
+function manyscreens(star, i, screens, ys; sym = false, scatter = 0.8)
+  pyplot(size = (600, 600))
+  plt = Plots.scatter([0], [0], yflip = true, ylabel = "V", xlabel = "B-V", label = "Uneclipsed")
+  for screen in screens 
+    UBVI = AATau.UBVI(star, i, screen, ys, sym = sym, scatter = scatter)
+    plot!(plt, UBVI["B"].-UBVI["V"], UBVI["V"], label = string(screen.h))
+  end
+  return plt
+end
 end
