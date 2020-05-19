@@ -45,6 +45,9 @@ struct DustScreen
 end
 
 function screenτ(screen::DustScreen, Δh::Real)
+  if(screen.h ≈ 0) 
+  	return 0
+  end
   return screen.τ*exp(-abs(Δh/screen.h))
 end
 
@@ -69,7 +72,7 @@ function spotorstar(star::AATauStar, i::Real,  x::Real, y::Real)
   end
 end
 
-function UBVI(star::AATauStar, i::Real, screen::DustScreen, yₛ::Real; h = 0.02, scatter = 0.8, sym = true)
+function UBVI(star::AATauStar, i::Real, screen::DustScreen, yₛ::Real; h = 0.02, scatter = 1, sym = true)
   coords = [-1:h:1;]
   EV = 0
   EB = 0
@@ -87,7 +90,7 @@ function UBVI(star::AATauStar, i::Real, screen::DustScreen, yₛ::Real; h = 0.02
       τ = screen.τ
     end
     
-    # print(τ, " ", y - yₛ, "\n")
+    # println(τ, " ", y - yₛ)
     cont = spotorstar(star, i, x, y)
     ΔV = τ/log(2.512)
     ΔB = ΔV/screen.Rᵥ + ΔV
@@ -140,13 +143,21 @@ function saveviscontinuummap(star::AATauStar, i::Real, screen::DustScreen, yₛ;
   end
 end
 
-function manyscreens(star, i, screens, ys; sym = false, scatter = 0.8)
-  pyplot(size = (600, 600))
+function manyscreens(star, i, screens, ys; sym = false, scatter = 1, outfile = "manyscreens.dat")
   plt = Plots.scatter([0], [0], yflip = true, ylabel = "V", xlabel = "B-V", label = "Uneclipsed")
+  f = open(outfile, "w")
   for screen in screens 
     UBVI = AATau.UBVI(star, i, screen, ys, sym = sym, scatter = scatter)
     plot!(plt, UBVI["B"].-UBVI["V"], UBVI["V"], label = string(screen.h))
+    # plot_title!(plt, "̇M = "*string(star.Mdot)*"; mag = "*string(star.rmi)*"-"*string(star.rmo))
+    println(f, "#h= ", screen.h)
+    println(f, 0.0, " ", 0.0, " ", 0.0, " ", 0.0, " ", screen.h)
+    for (u,b,v,i) in zip(UBVI["U"], UBVI["B"], UBVI["V"], UBVI["I"])
+    	println(f, u, " ", b, " ", v, " ", i, " ", screen.h)
+    end
+    println(f, "")
   end
+  close(f)
   return plt
 end
 end
