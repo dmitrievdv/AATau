@@ -41,7 +41,7 @@ struct DustScreen
   Rᵥ::Real
   Rᵤ::Real
   Rᵢ::Real
-  DustScreen(h, τ; Rᵥ = 3.1, Rᵤ = 4.1, Rᵢ = 3.2) = new(h, τ, 3.1, 4.1, 3.2)
+  DustScreen(h, τ; Rᵥ = 4.2, Rᵤ = 2.4, Rᵢ = 3.2) = new(h, τ, Rᵥ, Rᵤ, Rᵢ)
 end
 
 function screenτ(screen::DustScreen, Δh::Real)
@@ -95,7 +95,7 @@ function UBVI(star::AATauStar, i::Real, screen::DustScreen, yₛ::Real; h = 0.02
     ΔV = τ/log(2.512)
     ΔB = ΔV/screen.Rᵥ + ΔV
     ΔU = ΔV/screen.Rᵤ + ΔB
-    ΔI = ΔV/screen.Rᵢ + ΔV
+    ΔI = -ΔV/screen.Rᵢ + ΔV
     EV += cont(551e-7)*90e-7*(exp(-τ) + 0.121*scatter)
     EB += cont(445e-7)*94e-7*(2.512^(-ΔB) + 0.167*scatter)
     EU += cont(365e-7)*66e-7*(2.512^(-ΔU) + 0.222*scatter)
